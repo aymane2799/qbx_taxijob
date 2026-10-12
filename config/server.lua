@@ -2,8 +2,16 @@ return {
     allowedVehicleModels = {
         'taxi',
     },
+    -- Atlas fork: the fare of an NPC ride is computed here, on the server, from the straight-line distance
+    -- between the pick-up and the drop-off the server chose.
+    pricePerMile = 125.0,
+    startingPrice = 0,
     maxFare = 2000,
-    payCooldownSeconds = 5,
+    -- A ride is not paid when it took less time than its distance at this average speed, in metres per
+    -- second, straight line (35 = 126 km/h).
+    maxAverageSpeed = 35.0,
+    -- Seconds between two ride requests of the same driver.
+    rideStartCooldownSeconds = 5,
     cabSpawns = {
         vec4(899.0837, -180.4414, 73.4115, 238.7553),
         vec4(897.1274, -183.3882, 73.3531, 238.4949),
@@ -18,6 +26,7 @@ return {
         vec4(920.6716, -163.4763, 74.4108, 96.2972),
     },
     spawnPointMaxDistance = 25.0,
+    takeLocationMaxDistance = 20.0,
     deliverLocationMaxDistance = 20.0,
     chanceItemEnabled = true,
     chanceItem = 'cryptostick',

@@ -4,6 +4,7 @@ game 'gta5'
 description 'QBX_TaxiJob'
 repository 'https://github.com/Qbox-project/qbx_taxijob'
 version '1.0.0'
+-- Atlas fork of Qbox-project/qbx_taxijob: the server computes the NPC fare (README, "Atlas fork").
 
 shared_scripts {
 	'@ox_lib/init.lua',

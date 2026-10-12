@@ -8,6 +8,8 @@ local lastLocation = nil
 local mouseActive = false
 local garageZone, taxiParkingZone = nil, nil
 local pickupLocation, dropOffLocation = nil, nil
+-- Atlas fork: the pick-up, the drop-off and the fare of the NPC ride, as chosen by the server.
+local serverRide = nil
 
 -- used for polyzones
 local isInsidePickupZone = false
@@ -83,12 +85,7 @@ local zone
 local delieveryZone
 
 local function getDeliveryLocation()
-    NpcData.CurrentDeliver = math.random(1, #sharedConfig.npcLocations.deliverLocations)
-    if NpcData.LastDeliver then
-        while NpcData.LastDeliver == NpcData.CurrentDeliver do
-            NpcData.CurrentDeliver = math.random(1, #sharedConfig.npcLocations.deliverLocations)
-        end
-    end
+    NpcData.CurrentDeliver = serverRide.deliver
 
     if NpcData.DeliveryBlip then
         RemoveBlip(NpcData.DeliveryBlip)
@@ -116,7 +113,7 @@ local function getDeliveryLocation()
                             SendNUIMessage({
                                 action = 'toggleMeter'
                             })
-                            TriggerServerEvent('qb-taxi:server:NpcPay', meterData.currentFare)
+                            TriggerServerEvent('qb-taxi:server:NpcPay')
                             meterActive = false
                             SendNUIMessage({
                                 action = 'resetMeter'
@@ -149,7 +146,7 @@ local function callNpcPoly()
     CreateThread(function()
         while not NpcData.NpcTaken do
             if isInsidePickupZone then
-                if IsControlJustPressed(0, 38) then
+                if IsControlJustPressed(0, 38) and lib.callback.await('qb-taxi:server:pickUp', false) then
                     lib.hideTextUI()
                     local veh = cache.vehicle
                     local maxSeats, freeSeat = GetVehicleMaxNumberOfPassengers(veh), 0
@@ -269,7 +266,11 @@ local function calculateFareAmount()
             if config.meter.useGpsPrice and pickupLocation and dropOffLocation then
                 local totalRouteDistance = CalculateTravelDistanceBetweenPoints(pickupLocation.x, pickupLocation.y, pickupLocation.z, dropOffLocation.x, dropOffLocation.y, dropOffLocation.z) / 1609
                 local progress = math.min(meterData['distanceTraveled'] / totalRouteDistance, 1.0)
-                fareAmount = (totalRouteDistance * progress * config.meter.defaultPrice) + config.meter.startingPrice
+                if serverRide then
+                    fareAmount = serverRide.fare * progress
+                else
+                    fareAmount = (totalRouteDistance * progress * config.meter.defaultPrice) + config.meter.startingPrice
+                end
             else
                 fareAmount = (meterData['distanceTraveled'] * config.meter.defaultPrice) + config.meter.startingPrice
             end
@@ -327,7 +328,7 @@ function dropNpcPoly()
                     SendNUIMessage({
                         action = 'toggleMeter'
                     })
-                    TriggerServerEvent('qb-taxi:server:NpcPay', meterData.currentFare)
+                    TriggerServerEvent('qb-taxi:server:NpcPay')
                     meterActive = false
                     SendNUIMessage({
                         action = 'resetMeter'
@@ -505,12 +506,12 @@ end)
 RegisterNetEvent('qb-taxi:client:DoTaxiNpc', function()
     if whitelistedVehicle() then
         if not NpcData.Active then
-            NpcData.CurrentNpc = math.random(1, #sharedConfig.npcLocations.takeLocations)
-            if NpcData.LastNpc ~= nil then
-                while NpcData.LastNpc == NpcData.CurrentNpc do
-                    NpcData.CurrentNpc = math.random(1, #sharedConfig.npcLocations.takeLocations)
-                end
+            serverRide = lib.callback.await('qb-taxi:server:startRide', false)
+            if not serverRide then
+                exports.qbx_core:Notify(locale('error.ride_unavailable'), 'error')
+                return
             end
+            NpcData.CurrentNpc = serverRide.take
 
             local Gender = math.random(1, #config.npcSkins)
             local PedSkin = math.random(1, #config.npcSkins[Gender])
@@ -550,7 +551,7 @@ RegisterNetEvent('qb-taxi:client:DoTaxiNpc', function()
 
                             if dist < 5 then
                                 qbx.drawText3d({text = locale('info.call_npc'), coords = sharedConfig.npcLocations.takeLocations[NpcData.CurrentNpc].xyz})
-                                if IsControlJustPressed(0, 38) then
+                                if IsControlJustPressed(0, 38) and lib.callback.await('qb-taxi:server:pickUp', false) then
                                     local maxSeats, freeSeat = GetVehicleMaxNumberOfPassengers(cache.vehicle), 0
 
                                     for i=maxSeats - 1, 0, -1 do

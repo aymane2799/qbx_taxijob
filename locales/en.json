@@ -5,7 +5,8 @@
         "missing_meter": "This Vehicle Has No Taxi Meter",
         "no_vehicle": "You're not in a vehicle",
         "not_active_meter": "The Taxi Meter Is Not Active",
-        "no_meter_sight": "No Taxi Meter In Sight"
+        "no_meter_sight": "No Taxi Meter In Sight",
+        "ride_unavailable": "No ride is available right now. Try again in a moment."
     },
     "success": {},
     "info": {
