@@ -6,7 +6,7 @@ return {
         { model = 'taxi', label = locale('info.taxi_label_1') }
     },
     meter = {
-        defaultPrice = 125.0, -- price per mile
+        defaultPrice = 78.0, -- price per kilometre (Atlas fork; NPC rides use pricePerKm in config/server.lua)
         startingPrice = 0,     -- static starting price
         useGpsPrice = true -- use GPS distance instead of driven distance
     },

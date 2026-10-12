@@ -259,12 +259,12 @@ local function calculateFareAmount()
             local newDistance = #(startPos - newPos)
             lastLocation = newPos
 
-            meterData['distanceTraveled'] += (newDistance / 1609)
+            meterData['distanceTraveled'] += (newDistance / 1000)
 
             local fareAmount = 0
 
             if config.meter.useGpsPrice and pickupLocation and dropOffLocation then
-                local totalRouteDistance = CalculateTravelDistanceBetweenPoints(pickupLocation.x, pickupLocation.y, pickupLocation.z, dropOffLocation.x, dropOffLocation.y, dropOffLocation.z) / 1609
+                local totalRouteDistance = CalculateTravelDistanceBetweenPoints(pickupLocation.x, pickupLocation.y, pickupLocation.z, dropOffLocation.x, dropOffLocation.y, dropOffLocation.z) / 1000
                 local progress = math.min(meterData['distanceTraveled'] / totalRouteDistance, 1.0)
                 if serverRide then
                     fareAmount = serverRide.fare * progress

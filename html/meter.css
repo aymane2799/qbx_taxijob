@@ -1,13 +1,21 @@
 @import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700&display=swap");
 
+/* Atlas fork: a compact meter in a screen corner. Position and size are the variables below. */
 :root {
-    --meter-size-width: 45vh;
-    --meter-size-height: 22.3vh;
+    --meter-width: 26vh;
+    --meter-right: 2.5vh;
+    --meter-bottom: 12vh;
+    --meter-accent: #f5c518;
+    --meter-surface: rgba(18, 18, 22, 0.88);
+    --meter-inset: rgba(255, 255, 255, 0.06);
+    --meter-text: rgba(255, 255, 255, 0.92);
+    --meter-muted: rgba(255, 255, 255, 0.55);
 }
 
 * {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
     font-family: "Exo 2", sans-serif;
 }
 
@@ -18,104 +26,101 @@
 
 .g5-meter {
     position: absolute;
-    left: 5vh;
-    top: 50%;
-    transform: translateY(-20%) scale(0.8);
-    transform-origin: left center;
-    width: var(--meter-size-width);
-    height: var(--meter-size-height);
+    right: var(--meter-right);
+    bottom: var(--meter-bottom);
+    width: var(--meter-width);
 }
 
 .panel {
-    width: 45vh;
-    height: 22.3vh;
-    background: #1c1b1f;
-    border-radius: 10px;
-    padding: 10px;
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 6px;
-    box-sizing: border-box;
-}
-
-.box {
-    background: #36343b;
-    border-radius: 5px;
-    width: 100%;
-    height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    gap: 0.9vh;
+    padding: 1.2vh;
+    background: var(--meter-surface);
+    border-radius: 1.2vh;
+    border-top: 0.35vh solid var(--meter-accent);
+    box-shadow: 0 0.6vh 2vh rgba(0, 0, 0, 0.45);
+    color: var(--meter-text);
+}
+
+.meter-header {
+    display: flex;
     align-items: center;
-    box-sizing: border-box;
-    padding: 0.5vh;
+    justify-content: space-between;
 }
 
-.box span {
-    position: static;
-    font-size: 1.1vh;
-    color: rgba(255, 255, 255, 0.85);
-    line-height: 1.3;
+.meter-title {
+    font-size: 1.5vh;
+    font-weight: 700;
+    letter-spacing: 0.35vh;
+    color: var(--meter-accent);
 }
 
-.bottom-row {
-    grid-column: 1 / 3;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
+.toggle-meter-btn {
+    padding: 0.3vh 1vh;
+    background: var(--meter-inset);
+    border-radius: 10vh;
+    cursor: pointer;
+    transition: background 0.1s linear;
 }
 
-#total-price,
-#total-price-per-100m,
-#total-distance {
-    font-weight: bold;
-    font-size: 4.1vh;
+.toggle-meter-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.toggle-meter-btn p {
+    font-size: 1.2vh;
+    font-weight: 600;
     letter-spacing: 0.1vh;
+    text-transform: uppercase;
+    color: rgb(231, 30, 37);
+}
+
+.meter-fare {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: 0.8vh 1.2vh;
+    background: var(--meter-inset);
+    border-radius: 0.8vh;
 }
 
 #total-price {
-    color: rgb(64, 160, 64);
+    font-size: 4.2vh;
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--meter-text);
 }
 
-#total-price-per-100m {
-    color: rgb(56, 143, 243);
+.bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9vh;
 }
 
+.box {
+    display: flex;
+    flex-direction: column;
+    padding: 0.7vh 1vh;
+    background: var(--meter-inset);
+    border-radius: 0.8vh;
+}
+
+#total-price-per-100m,
 #total-distance {
-    color: rgb(255, 153, 57);
+    font-size: 1.9vh;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--meter-text);
 }
 
 #total-price-label,
 #total-price-per-100m-label,
 #total-distance-label {
     font-size: 1.1vh;
-    letter-spacing: 0.1vh;
-    color: rgba(255, 255, 255, 0.75);
-    font-weight: lighter;
-    margin-top: 0.3vh;
-}
-
-.toggle-meter-btn {
-    width: 100%;
-    height: 100%;
-    background: rgba(46, 46, 46, 0.534);
-    border-radius: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: background 0.1s linear;
-    cursor: pointer;
-}
-
-.toggle-meter-btn p {
-    font-size: 1.4vh;
-    color: rgb(231, 30, 37);
-    letter-spacing: 0.1vh;
-    font-weight: bold;
-    font-family: "Exo 2", sans-serif;
-}
-
-.toggle-meter-btn:hover {
-    background: rgba(66, 66, 66, 0.657);
+    font-weight: 400;
+    letter-spacing: 0.12vh;
+    text-transform: uppercase;
+    color: var(--meter-muted);
 }

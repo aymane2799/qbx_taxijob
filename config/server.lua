@@ -4,7 +4,7 @@ return {
     },
     -- Atlas fork: the fare of an NPC ride is computed here, on the server, from the straight-line distance
     -- between the pick-up and the drop-off the server chose.
-    pricePerMile = 125.0,
+    pricePerKm = 78.0,
     startingPrice = 0,
     maxFare = 2000,
     -- A ride is not paid when it took less time than its distance at this average speed, in metres per

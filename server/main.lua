@@ -117,7 +117,7 @@ local rides = {}
 local lastTake, lastDeliver = {}, {}
 local lastRideStart = {}
 
-local METRES_PER_MILE = 1609.34
+local METRES_PER_KM = 1000
 
 ---@param count integer
 ---@param previous? integer
@@ -176,7 +176,7 @@ lib.callback.register('qb-taxi:server:startRide', function(source)
     lastTake[source], lastDeliver[source] = take, deliver
 
     local distance = #(locations.takeLocations[take].xyz - locations.deliverLocations[deliver].xyz)
-    local fare = math.floor(config.startingPrice + distance / METRES_PER_MILE * config.pricePerMile)
+    local fare = math.floor(config.startingPrice + distance / METRES_PER_KM * config.pricePerKm)
 
     -- A ride that was started and not finished is replaced and never paid.
     rides[source] = {
