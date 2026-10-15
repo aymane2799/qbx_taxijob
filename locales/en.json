@@ -6,7 +6,10 @@
         "no_vehicle": "You're not in a vehicle",
         "not_active_meter": "The Taxi Meter Is Not Active",
         "no_meter_sight": "No Taxi Meter In Sight",
-        "ride_unavailable": "No ride is available right now. Try again in a moment."
+        "ride_unavailable": "No ride is available right now. Try again in a moment.",
+        "cab_already_taken": "You already have a cab out",
+        "no_cab": "You have no cab to return",
+        "cab_too_far": "Bring the cab back to the depot first"
     },
     "success": {},
     "info": {
@@ -23,6 +26,10 @@
         "taxi_returned": "Cab Parked",
         "request_taxi": "[E] - Request Taxi Cab",
         "request_taxi_target": "Request Taxi Cab"
+    },
+    "target": {
+        "take_cab": "Take a cab",
+        "return_cab": "Return the cab"
     },
     "menu": {
         "taxi_menu_header": "Taxi Vehicles",

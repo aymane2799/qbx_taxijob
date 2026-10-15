@@ -6,7 +6,6 @@ local meterIsOpen = false
 local meterActive = false
 local lastLocation = nil
 local mouseActive = false
-local garageZone, taxiParkingZone = nil, nil
 local pickupLocation, dropOffLocation = nil, nil
 -- Atlas fork: the pick-up, the drop-off and the fare of the NPC ride, as chosen by the server.
 local serverRide = nil
@@ -35,7 +34,7 @@ local NpcData = {
     CountDown = 180
 }
 
-local taxiPed = nil
+local depotPed = nil
 
 local function resetNpcTask()
     NpcData = {
@@ -389,95 +388,64 @@ local function taxiGarage()
     lib.showContext('garages_depotlist')
 end
 
-local function setupGarageZone()
-    if config.useTarget then
-        lib.requestModel(`a_m_m_indian_01`)
-        taxiPed = CreatePed(3, `a_m_m_indian_01`, 894.93, -179.12, 74.7 - 1.0, 237.09, false, true)
-        SetModelAsNoLongerNeeded(`a_m_m_indian_01`)
-        SetBlockingOfNonTemporaryEvents(taxiPed, true)
-        FreezeEntityPosition(taxiPed, true)
-        SetEntityInvincible(taxiPed, true)
-        exports.ox_target:addLocalEntity(taxiPed, {
-            {
-                type = 'client',
-                event = 'qb-taxijob:client:requestcab',
-                icon = 'fa-solid fa-taxi',
-                label = locale('info.request_taxi_target'),
-                job = 'taxi',
-            }
-        })
-    else
-        local function onEnter()
-            if not cache.vehicle then
-                lib.showTextUI(locale('info.request_taxi'))
-            end
-        end
-
-        local function onExit()
-            lib.hideTextUI()
-        end
-
-        local function inside()
-            if IsControlJustPressed(0, 38) then
-                lib.hideTextUI()
-                taxiGarage()
-                return
-            end
-        end
-
-        garageZone = lib.zones.box({
-            coords = config.locations.garage.coords,
-            size = vec3(1.6, 4.0, 2.8),
-            rotation = 328.5,
-            debug = config.debugPoly,
-            inside = inside,
-            onEnter = onEnter,
-            onExit = onExit
-        })
+-- Atlas fork: the dispatcher of the cab depot replaces the garage zone and the parking zone. Taking a cab and
+-- returning it are options of this ped (ox_target), for the taxi job only; the server measures the distance to
+-- it and deletes the returned cab itself. The ped is local and exists only while the player is near the depot.
+local function returnTaxi()
+    if lib.callback.await('qb-taxi:server:returnTaxi', false) then
+        exports.qbx_core:Notify(locale('info.taxi_returned'), 'success')
     end
 end
 
-local function destroyGarageZone()
-    if not garageZone then return end
+local function removeDepotPed()
+    if not depotPed then return end
 
-    garageZone:remove()
-    garageZone = nil
+    exports.ox_target:removeLocalEntity(depotPed)
+    if DoesEntityExist(depotPed) then DeletePed(depotPed) end
+    depotPed = nil
 end
 
-function setupTaxiParkingZone()
-        taxiParkingZone = lib.zones.box({
-        coords = vec3(config.locations.main.coords.x, config.locations.main.coords.y, config.locations.main.coords.z),
-        size = vec3(4.0, 4.0, 4.0),
-        rotation = 55,
-        debug = config.debugPoly,
-        inside = function()
-            if QBX.PlayerData.job.name ~= 'taxi' then return end
-            if IsControlJustPressed(0, 38) then
-                if whitelistedVehicle() then
-                    if meterIsOpen then
-                        TriggerEvent('qb-taxi:client:toggleMeter')
-                        meterActive = false
-                    end
-                    DeleteVehicle(cache.vehicle)
-                    exports.qbx_core:Notify(locale('info.taxi_returned'), 'success')
-                end
-            end
-        end,
-        onEnter = function()
-            lib.showTextUI(locale('info.vehicle_parking'))
-        end,
-        onExit = function()
-            lib.hideTextUI()
-        end
+local function spawnDepotPed()
+    if depotPed then return end
+
+    local data = sharedConfig.dispatcher
+    local model = lib.requestModel(data.model, 10000)
+    depotPed = CreatePed(0, model, data.coords.x, data.coords.y, data.coords.z, data.coords.w, false, false)
+    SetModelAsNoLongerNeeded(model)
+    FreezeEntityPosition(depotPed, true)
+    SetEntityInvincible(depotPed, true)
+    SetBlockingOfNonTemporaryEvents(depotPed, true)
+
+    if data.scenario then
+        TaskStartScenarioInPlace(depotPed, data.scenario, 0, true)
+    end
+
+    exports.ox_target:addLocalEntity(depotPed, {
+        {
+            name = 'taxi_take',
+            label = locale('target.take_cab'),
+            icon = 'fa-solid fa-taxi',
+            groups = 'taxi',
+            distance = 2.5,
+            onSelect = taxiGarage,
+        },
+        {
+            name = 'taxi_return',
+            label = locale('target.return_cab'),
+            icon = 'fa-solid fa-warehouse',
+            groups = 'taxi',
+            distance = 2.5,
+            onSelect = returnTaxi,
+        },
     })
 end
 
-local function destroyTaxiParkingZone()
-    if not taxiParkingZone then return end
-
-    taxiParkingZone:remove()
-    taxiParkingZone = nil
-end
+lib.points.new({
+    coords = sharedConfig.dispatcher.coords.xyz,
+    distance = 60.0,
+    onEnter = spawnDepotPed,
+    onExit = removeDepotPed,
+})
 
 RegisterNetEvent('qb-taxi:client:TakeVehicle', function(data)
     local SpawnPoint = getVehicleSpawnPoint()
@@ -487,7 +455,10 @@ RegisterNetEvent('qb-taxi:client:TakeVehicle', function(data)
         if CanSpawn then
             local netId = lib.callback.await('qb-taxi:server:spawnTaxi', false, data.model, coords)
             if not netId then
-                exports.qbx_core:Notify(locale('info.no_spawn_point'), 'error')
+                -- Atlas fork: false means the server refused and said why.
+                if netId == nil then
+                    exports.qbx_core:Notify(locale('info.no_spawn_point'), 'error')
+                end
                 return
             end
             local veh = NetToVeh(netId)
@@ -690,15 +661,11 @@ end)
 
 local function init()
     if QBX.PlayerData.job.name == 'taxi' then
-        setupGarageZone()
-        setupTaxiParkingZone()
         setLocationsBlip()
     end
 end
 
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function()
-    destroyGarageZone()
-    destroyTaxiParkingZone()
     init()
 end)
 

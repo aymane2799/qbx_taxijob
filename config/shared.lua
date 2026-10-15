@@ -1,4 +1,11 @@
 return {
+    -- Atlas fork: the dispatcher of the cab depot (upstream's own target ped and its position). Taking a cab
+    -- and returning it are the options of this ped (ox_target). The server measures the player's distance to it.
+    dispatcher = {
+        model = 'a_m_m_indian_01',
+        coords = vec4(894.93, -179.12, 73.7, 237.09),
+        scenario = 'WORLD_HUMAN_CLIPBOARD',
+    },
     npcLocations = {
         takeLocations = {
             vec4(257.61, -380.57, 44.71, 340.5),

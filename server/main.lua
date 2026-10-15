@@ -4,6 +4,27 @@ local config = require 'config.server'
 local sharedConfig = require 'config.shared'
 local ITEMS = exports.ox_inventory:Items()
 
+-- Atlas fork: a cab is taken and returned at the dispatcher (config/shared.lua); the server measures the
+-- player's distance to it. A driver has one cab at a time, and it is returned only near the depot.
+local depot = sharedConfig.dispatcher.coords.xyz
+local depotRange = 6.0
+local returnRange = 40.0
+---@type table<string, integer> net id of the cab of each citizenid
+local cabs = {}
+
+local function isNearDepot(src)
+    local ped = GetPlayerPed(src)
+    return ped ~= 0 and #(GetEntityCoords(ped) - depot) <= depotRange
+end
+
+---@return integer? vehicle the driver's cab, if it still exists
+local function getCab(citizenid)
+    local netId = cabs[citizenid]
+    local vehicle = netId and NetworkGetEntityFromNetworkId(netId)
+    if vehicle and vehicle ~= 0 and DoesEntityExist(vehicle) then return vehicle end
+    cabs[citizenid] = nil
+end
+
 local function getPlayerWithTaxiJob(src)
     local player = exports.qbx_core:GetPlayer(src)
     if not player then return nil end
@@ -84,6 +105,14 @@ lib.callback.register('qb-taxi:server:spawnTaxi', function(source, model, coords
         return nil
     end
 
+    -- Atlas fork: taken at the dispatcher, one cab per driver.
+    if not isNearDepot(source) then return false end
+    local citizenid = player.PlayerData.citizenid
+    if getCab(citizenid) then
+        exports.qbx_core:Notify(source, locale('error.cab_already_taken'), 'error')
+        return false
+    end
+
     local x, y, z, heading = getCoordsXYZW(coords)
     if not x or not y or not z then return nil end
     local spawnCoords = vec4(x, y, z, heading)
@@ -98,7 +127,32 @@ lib.callback.register('qb-taxi:server:spawnTaxi', function(source, model, coords
     local plate = 'TAXI' .. math.random(1000, 9999)
     SetVehicleNumberPlateText(veh, plate)
     TriggerClientEvent('vehiclekeys:client:SetOwner', source, plate)
+    cabs[citizenid] = netId
     return netId
+end)
+
+-- Atlas fork: the cab is returned at the dispatcher, on foot. Upstream deleted it on the client wherever it
+-- was. Here the server refuses while the cab is away from the depot and deletes it itself.
+---@return boolean returned
+lib.callback.register('qb-taxi:server:returnTaxi', function(source)
+    local player = getPlayerWithTaxiJob(source)
+    if not player or not isNearDepot(source) then return false end
+
+    local citizenid = player.PlayerData.citizenid
+    local vehicle = getCab(citizenid)
+    if not vehicle then
+        exports.qbx_core:Notify(source, locale('error.no_cab'), 'error')
+        return false
+    end
+
+    if #(GetEntityCoords(vehicle) - depot) > returnRange then
+        exports.qbx_core:Notify(source, locale('error.cab_too_far'), 'error')
+        return false
+    end
+
+    DeleteEntity(vehicle)
+    cabs[citizenid] = nil
+    return true
 end)
 
 -- Atlas fork: the server owns an NPC ride from start to payment. It picks the pick-up and the drop-off,
